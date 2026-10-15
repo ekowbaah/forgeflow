@@ -1,13 +1,24 @@
 # forgeflow
-Durable-workflow control-plane core in Rust. The dependency-light engine provides idempotent submission, scheduled delivery, explicit job states, bounded retries, worker leases, heartbeats, stale-lease recovery, claim tokens, least-privilege roles, and an audit trail.
+
+A compact job-control plane in Rust.
+
+Jobs can be submitted idempotently, scheduled, claimed with expiring leases, retried, cancelled, and recovered after a worker disappears. Claim tokens fence stale workers, roles keep operations separate, and every state change is added to the audit trail.
+
+The Axum server exposes health checks plus job, claim, completion, cancellation, and audit endpoints under `/v1`.
 
 ```mermaid
 flowchart LR
-  API[REST/Webhooks] --> Engine
+  Client --> API[Axum API]
+  API --> Engine
   Engine --> Queue
   Queue --> Worker
-  Worker --> Engine
-  Engine --> Audit[(Audit log)]
+  Worker --> API
+  Engine --> Audit
 ```
 
-Run `cargo test` and `cargo run`, then use the health, job, worker-claim, completion, cancellation, and audit endpoints under `/v1`. Time is supplied explicitly to the domain core, making scheduling and recovery deterministic under test. The in-memory adapter keeps the example easy to run; the engine's lease and claim-token boundaries are designed so a durable store can replace it without changing worker semantics.
+```sh
+cargo test
+cargo run
+```
+
+The included adapter keeps state in memory. The engine supplies time explicitly so scheduling, retries, and lease recovery stay deterministic in tests.
