@@ -1,5 +1,7 @@
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
-#[derive(Debug, Clone, PartialEq, Eq)]
+pub mod api;
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum State {
     Scheduled,
     Queued,
@@ -7,7 +9,7 @@ pub enum State {
     Succeeded,
     Failed,
 }
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Job {
     pub id: String,
     pub payload: String,
@@ -18,7 +20,7 @@ pub struct Job {
     pub lease_expires_at_ms: Option<u64>,
     pub claimed_by: Option<String>,
 }
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Claim {
     pub job: Job,
     pub token: String,
@@ -220,6 +222,25 @@ impl Engine {
     }
     pub fn audit(&self) -> &[String] {
         &self.audit
+    }
+    pub fn jobs(&self) -> Vec<Job> {
+        let mut jobs: Vec<_> = self.jobs.values().cloned().collect();
+        jobs.sort_by(|a, b| a.id.cmp(&b.id));
+        jobs
+    }
+    pub fn cancel(&mut self, id: &str) -> bool {
+        let Some(job) = self.jobs.get_mut(id) else {
+            return false;
+        };
+        if matches!(job.state, State::Succeeded | State::Failed) {
+            return false;
+        }
+        job.state = State::Failed;
+        job.claimed_by = None;
+        job.lease_expires_at_ms = None;
+        self.queue.retain(|queued| queued != id);
+        self.audit.push(format!("cancelled:{id}"));
+        true
     }
 }
 #[cfg(test)]

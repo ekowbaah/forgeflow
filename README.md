@@ -10,4 +10,4 @@ flowchart LR
   Engine --> Audit[(Audit log)]
 ```
 
-Run `cargo test` and `cargo run`. Time is supplied explicitly to the domain core, which makes scheduling and recovery behavior deterministic under test. PostgreSQL persistence, Axum APIs, OpenTelemetry, signed webhooks, and the Angular console remain the next integration milestones.
+Run `cargo test` and `cargo run`, then use the health, job, worker-claim, completion, cancellation, and audit endpoints under `/v1`. Time is supplied explicitly to the domain core, making scheduling and recovery deterministic under test. The in-memory adapter keeps the example easy to run; the engine's lease and claim-token boundaries are designed so a durable store can replace it without changing worker semantics.
