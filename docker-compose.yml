@@ -1,0 +1,4 @@
+services:
+  forgeflow:
+    build: .
+    read_only: true
